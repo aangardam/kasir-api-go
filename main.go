@@ -50,13 +50,40 @@ func main() {
 	http.HandleFunc("/api/product", productHandler.HandleProducts)
 	http.HandleFunc("/api/product/", productHandler.HandleProductByID)
 
-	// localhost:8080/health
+	// Categories
+	categoryRepo := repositories.NewCategoryRepository(db)
+	categoryService := services.NewCategoryService(categoryRepo)
+	categoryHandler := handlers.NewCategoryHandler(categoryService)
+
+	http.HandleFunc("/api/category", categoryHandler.HandleCategorys)
+	http.HandleFunc("/api/category/", categoryHandler.HandleCategoryByID)
+
+	// localhost:8080
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "API Running",
-			"status":  "OK",
-		})
+
+		response := map[string]interface{}{
+			"service": "kasir-api-go",
+			"version": "v1",
+			"endpoints": map[string]interface{}{
+				"product": []map[string]string{
+					{"method": "GET", "path": "/api/product", "desc": "List products"},
+					{"method": "GET", "path": "/api/product/{id}", "desc": "Detail product"},
+					{"method": "POST", "path": "/api/product", "desc": "Create product"},
+					{"method": "PUT", "path": "/api/product/{id}", "desc": "Update product"},
+					{"method": "DELETE", "path": "/api/product/{id}", "desc": "Delete product"},
+				},
+				"category": []map[string]string{
+					{"method": "GET", "path": "/api/category", "desc": "List categories"},
+					{"method": "GET", "path": "/api/category/{id}", "desc": "Detail category"},
+					{"method": "POST", "path": "/api/category", "desc": "Create category"},
+					{"method": "PUT", "path": "/api/category/{id}", "desc": "Update category"},
+					{"method": "DELETE", "path": "/api/category/{id}", "desc": "Delete category"},
+				},
+			},
+		}
+
+		json.NewEncoder(w).Encode(response)
 	})
 	fmt.Println("Server running di localhost:" + config.Port)
 
