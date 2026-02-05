@@ -65,7 +65,7 @@ func main() {
 	reportRepo := repositories.NewReportRepository(db)
 	reportService := services.NewReportService(reportRepo)
 	reportHandler := handlers.NewReportHandler(reportService)
-	http.HandleFunc("/api/report", reportHandler.HandleDailyReport)
+	http.HandleFunc("/api/report/hari-ini", reportHandler.HandleDailyReport)
 
 	// localhost:8080
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +93,7 @@ func main() {
 					{"method": "POST", "path": "/api/checkout", "desc": "Checkout"},
 				},
 				"report": []map[string]string{
-					{"method": "GET", "path": "/api/report", "desc": "Daily report"},
+					{"method": "GET", "path": "/api/report/hari-ini", "desc": "Daily report"},
 				},
 			},
 		}
