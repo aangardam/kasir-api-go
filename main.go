@@ -45,8 +45,6 @@ func main() {
 	productRepo := repositories.NewProductRepository(db)
 	productService := services.NewProductService(productRepo)
 	productHandler := handlers.NewProductHandler(productService)
-
-	// Setup routes
 	http.HandleFunc("/api/product", productHandler.HandleProducts)
 	http.HandleFunc("/api/product/", productHandler.HandleProductByID)
 
@@ -54,9 +52,14 @@ func main() {
 	categoryRepo := repositories.NewCategoryRepository(db)
 	categoryService := services.NewCategoryService(categoryRepo)
 	categoryHandler := handlers.NewCategoryHandler(categoryService)
-
 	http.HandleFunc("/api/category", categoryHandler.HandleCategorys)
 	http.HandleFunc("/api/category/", categoryHandler.HandleCategoryByID)
+
+	// Transaction
+	transactionRepo := repositories.NewTransactionRepository(db)
+	transactionService := services.NewTransactionService(transactionRepo)
+	transactionHandler := handlers.NewTransactionHandler(transactionService)
+	http.HandleFunc("/api/checkout", transactionHandler.Checkout)
 
 	// localhost:8080
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -79,6 +82,9 @@ func main() {
 					{"method": "POST", "path": "/api/category", "desc": "Create category"},
 					{"method": "PUT", "path": "/api/category/{id}", "desc": "Update category"},
 					{"method": "DELETE", "path": "/api/category/{id}", "desc": "Delete category"},
+				},
+				"transaction": []map[string]string{
+					{"method": "POST", "path": "/api/checkout", "desc": "Checkout"},
 				},
 			},
 		}
