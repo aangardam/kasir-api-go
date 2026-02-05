@@ -15,10 +15,6 @@ func NewTransactionRepository(db *sql.DB) *TransactionRepository {
 }
 
 func (repo *TransactionRepository) CreateTransaction(items []models.ChackoutItem) (*models.Transaction, error) {
-	var (
-		res *models.Transaction
-	)
-
 	tx, err := repo.db.Begin()
 	if err != nil {
 		return nil, err
@@ -31,16 +27,18 @@ func (repo *TransactionRepository) CreateTransaction(items []models.ChackoutItem
 	details := make([]models.TransactionDetails, 0)
 	//loop items
 	for _, item := range items {
-		var productName string
-		var ProductID int
-		var price int
-		var stock int
+		var (
+			ProductName string
+			ProductID   int
+			Price       int
+			Stock       int
+		)
 		//get product id dapatkan price
 		err := tx.QueryRow("SELECT id, name, price, stock FROM products where id=$1", item.ProductID).Scan(
 			&ProductID,
-			&productName,
-			&price,
-			&stock,
+			&ProductName,
+			&Price,
+			&Stock,
 		)
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("product not found")
@@ -48,9 +46,13 @@ func (repo *TransactionRepository) CreateTransaction(items []models.ChackoutItem
 		if err != nil {
 			return nil, err
 		}
+
+		if Stock < item.Quantity {
+			return nil, fmt.Errorf("stok produk %s tidak mencukupi (sisa: %d)", ProductName, Stock)
+		}
 		//hitung current total = quantity * price
-		subtotal := item.Quantity * price
-		totalAmount += subtotal
+		total := item.Quantity * Price
+		totalAmount += total
 
 		//kurangi jumlah stock
 		_, err = tx.Exec("UPDATE products SET stock = stock - $1 WHERE id = $2", item.Quantity, item.ProductID)
@@ -61,9 +63,9 @@ func (repo *TransactionRepository) CreateTransaction(items []models.ChackoutItem
 		//item insert ke transaction detail
 		details = append(details, models.TransactionDetails{
 			ProductID:   ProductID,
-			ProductName: productName,
+			ProductName: ProductName,
 			Quantity:    item.Quantity,
-			SubTotal:    subtotal,
+			SubTotal:    total,
 		})
 
 	}
@@ -74,28 +76,30 @@ func (repo *TransactionRepository) CreateTransaction(items []models.ChackoutItem
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(transactionID)
 
-	for i, detail := range details {
-		details[i].TransactionID = transactionID
-		_, err := tx.Exec("INSERT INTO transaction_details (transaction_id, product_id, quantity, subtotal) VALUES ($1, $2, $3, $4)",
-			transactionID,
-			detail.ProductID,
-			detail.Quantity,
-			detail.SubTotal)
-		if err != nil {
-			return nil, err
-		}
+	query := "INSERT INTO transaction_details (transaction_id, product_id, quantity, subtotal) VALUES "
+	var values []interface{}
+	counter := 1
+	for _, d := range details {
+		query += fmt.Sprintf("($%d, $%d, $%d, $%d),", counter, counter+1, counter+2, counter+3)
+		values = append(values, transactionID, d.ProductID, d.Quantity, d.SubTotal)
+		counter += 4
+	}
+	// Hapus koma terakhir dan ganti dengan titik koma atau kosong
+	query = query[0 : len(query)-1]
+
+	_, err = tx.Exec(query, values...)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	res = &models.Transaction{
+
+	return &models.Transaction{
 		ID:          transactionID,
 		TotalAmount: totalAmount,
-		// CreatedAt:   "2022-01-01 00:00:00",
-		Detail: details,
-	}
-	return res, nil
+		Detail:      details,
+	}, nil
 }
