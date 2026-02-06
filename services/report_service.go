@@ -18,3 +18,8 @@ func (s *ReportService) GetDailyReport() (*models.DailyReport, error) {
 	// Memanggil fungsi di repository
 	return s.repo.GetDailyReport()
 }
+
+func (s *ReportService) GetReport(startDate, endDate string) (*models.Report, error) {
+	// Memanggil fungsi di repository
+	return s.repo.GetReport(startDate, endDate)
+}

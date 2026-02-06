@@ -66,6 +66,7 @@ func main() {
 	reportService := services.NewReportService(reportRepo)
 	reportHandler := handlers.NewReportHandler(reportService)
 	http.HandleFunc("/api/report/hari-ini", reportHandler.HandleDailyReport)
+	http.HandleFunc("/api/report", reportHandler.HandleReport)
 
 	// localhost:8080
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -94,6 +95,7 @@ func main() {
 				},
 				"report": []map[string]string{
 					{"method": "GET", "path": "/api/report/hari-ini", "desc": "Daily report"},
+					{"method": "GET", "path": "/api/report?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD", "desc": "Report by date range"},
 				},
 			},
 		}
